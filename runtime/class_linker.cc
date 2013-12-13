@@ -2445,7 +2445,9 @@ void ClassLinker::VerifyClass(mirror::Class* klass) {
         self->GetException(NULL)->SetCause(cause.get());
       }
       ClassReference ref(klass->GetDexCache()->GetDexFile(), klass->GetDexClassDefIndex());
-      verifier::MethodVerifier::AddRejectedClass(ref);
+      if (Runtime::Current()->IsCompiler()) {
+        verifier::MethodVerifier::AddRejectedClass(ref);
+      }
       klass->SetStatus(mirror::Class::kStatusError, self);
       return;
     }
