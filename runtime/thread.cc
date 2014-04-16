@@ -1045,7 +1045,7 @@ void Thread::Destroy() {
     // (This conditional is only needed for tests, where Thread.lock won't have been set.)
     if (lock != NULL) {
       ObjectLock locker(self, lock);
-      locker.Notify();
+      locker.NotifyAll();
     }
   }
 
