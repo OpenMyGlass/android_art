@@ -235,6 +235,8 @@ static jmethodID FindMethodID(ScopedObjectAccess& soa, jclass jni_class,
   ArtMethod* method = NULL;
   if (is_static) {
     method = c->FindDirectMethod(name, sig);
+  } else if (c->IsInterface()) {
+    method = c->FindInterfaceMethod(name, sig);
   } else {
     method = c->FindVirtualMethod(name, sig);
     if (method == NULL) {
