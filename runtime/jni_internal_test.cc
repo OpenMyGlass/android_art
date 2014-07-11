@@ -1165,8 +1165,26 @@ TEST_F(JniInternalTest, IsAssignableFrom) {
   jclass string_class = env_->FindClass("java/lang/String");
   ASSERT_TRUE(string_class != NULL);
 
-  ASSERT_TRUE(env_->IsAssignableFrom(object_class, string_class));
-  ASSERT_FALSE(env_->IsAssignableFrom(string_class, object_class));
+  // A superclass is assignable from an instance of its
+  // subclass but not vice versa.
+  ASSERT_TRUE(env_->IsAssignableFrom(string_class, object_class));
+  ASSERT_FALSE(env_->IsAssignableFrom(object_class, string_class));
+
+  jclass charsequence_interface = env_->FindClass("java/lang/CharSequence");
+  ASSERT_TRUE(charsequence_interface != NULL);
+
+  // An interface is assignable from an instance of an implementing
+  // class but not vice versa.
+  ASSERT_TRUE(env_->IsAssignableFrom(string_class, charsequence_interface));
+  ASSERT_FALSE(env_->IsAssignableFrom(charsequence_interface, string_class));
+
+  // Check that arrays are covariant.
+  jclass string_array_class = env_->FindClass("[Ljava/lang/String;");
+  ASSERT_TRUE(string_array_class != NULL);
+  jclass object_array_class = env_->FindClass("[Ljava/lang/Object;");
+  ASSERT_TRUE(object_array_class != NULL);
+  ASSERT_TRUE(env_->IsAssignableFrom(string_array_class, object_array_class));
+  ASSERT_FALSE(env_->IsAssignableFrom(object_array_class, string_array_class));
 }
 
 TEST_F(JniInternalTest, GetObjectRefType) {

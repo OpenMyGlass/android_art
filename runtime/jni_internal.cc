@@ -721,13 +721,15 @@ class JNI {
     return soa.AddLocalReference<jclass>(c->GetSuperClass());
   }
 
+  // Note: java_class1 should be safely castable to java_class2, and
+  // not the other way around.
   static jboolean IsAssignableFrom(JNIEnv* env, jclass java_class1, jclass java_class2) {
     CHECK_NON_NULL_ARGUMENT(IsAssignableFrom, java_class1);
     CHECK_NON_NULL_ARGUMENT(IsAssignableFrom, java_class2);
     ScopedObjectAccess soa(env);
     Class* c1 = soa.Decode<Class*>(java_class1);
     Class* c2 = soa.Decode<Class*>(java_class2);
-    return c1->IsAssignableFrom(c2) ? JNI_TRUE : JNI_FALSE;
+    return c2->IsAssignableFrom(c1) ? JNI_TRUE : JNI_FALSE;
   }
 
   static jboolean IsInstanceOf(JNIEnv* env, jobject jobj, jclass java_class) {
