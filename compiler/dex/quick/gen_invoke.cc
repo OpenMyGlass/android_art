@@ -1044,7 +1044,7 @@ bool Mir2Lir::GenInlinedDoubleCvt(CallInfo* info) {
 }
 
 /*
- * Fast string.index_of(I) & (II).  Tests for simple case of char <= 0xffff,
+ * Fast string.indexOf(I) & (II).  Tests for simple case of char <= 0xffff,
  * otherwise bails to standard library code.
  */
 bool Mir2Lir::GenInlinedIndexOf(CallInfo* info, bool zero_based) {
@@ -1060,12 +1060,12 @@ bool Mir2Lir::GenInlinedIndexOf(CallInfo* info, bool zero_based) {
 
   RegLocation rl_obj = info->args[0];
   RegLocation rl_char = info->args[1];
-  RegLocation rl_start = info->args[2];
   LoadValueDirectFixed(rl_obj, reg_ptr);
   LoadValueDirectFixed(rl_char, reg_char);
   if (zero_based) {
     LoadConstant(reg_start, 0);
   } else {
+    RegLocation rl_start = info->args[2];     // 3rd arg only present in III flavor of IndexOf.
     LoadValueDirectFixed(rl_start, reg_start);
   }
   int r_tgt = (cu_->instruction_set != kX86) ? LoadHelper(QUICK_ENTRYPOINT_OFFSET(pIndexOf)) : 0;
@@ -1232,7 +1232,7 @@ bool Mir2Lir::GenIntrinsic(CallInfo* info) {
     }
   } else if (tgt_methods_declaring_class.starts_with("Ljava/lang/Float;")) {
     std::string tgt_method(PrettyMethod(info->index, *cu_->dex_file));
-    if (tgt_method == "int java.lang.Float.float_to_raw_int_bits(float)") {
+    if (tgt_method == "int java.lang.Float.floatToRawIntBits(float)") {
       return GenInlinedFloatCvt(info);
     }
     if (tgt_method == "float java.lang.Float.intBitsToFloat(int)") {
@@ -1269,13 +1269,13 @@ bool Mir2Lir::GenIntrinsic(CallInfo* info) {
     if (tgt_method == "int java.lang.String.compareTo(java.lang.String)") {
       return GenInlinedStringCompareTo(info);
     }
-    if (tgt_method == "boolean java.lang.String.is_empty()") {
+    if (tgt_method == "boolean java.lang.String.isEmpty()") {
       return GenInlinedStringIsEmptyOrLength(info, true /* is_empty */);
     }
-    if (tgt_method == "int java.lang.String.index_of(int, int)") {
+    if (tgt_method == "int java.lang.String.indexOf(int, int)") {
       return GenInlinedIndexOf(info, false /* base 0 */);
     }
-    if (tgt_method == "int java.lang.String.index_of(int)") {
+    if (tgt_method == "int java.lang.String.indexOf(int)") {
       return GenInlinedIndexOf(info, true /* base 0 */);
     }
     if (tgt_method == "int java.lang.String.length()") {

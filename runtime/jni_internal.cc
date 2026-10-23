@@ -235,6 +235,8 @@ static jmethodID FindMethodID(ScopedObjectAccess& soa, jclass jni_class,
   ArtMethod* method = NULL;
   if (is_static) {
     method = c->FindDirectMethod(name, sig);
+  } else if (c->IsInterface()) {
+    method = c->FindInterfaceMethod(name, sig);
   } else {
     method = c->FindVirtualMethod(name, sig);
     if (method == NULL) {
@@ -719,13 +721,15 @@ class JNI {
     return soa.AddLocalReference<jclass>(c->GetSuperClass());
   }
 
+  // Note: java_class1 should be safely castable to java_class2, and
+  // not the other way around.
   static jboolean IsAssignableFrom(JNIEnv* env, jclass java_class1, jclass java_class2) {
     CHECK_NON_NULL_ARGUMENT(IsAssignableFrom, java_class1);
     CHECK_NON_NULL_ARGUMENT(IsAssignableFrom, java_class2);
     ScopedObjectAccess soa(env);
     Class* c1 = soa.Decode<Class*>(java_class1);
     Class* c2 = soa.Decode<Class*>(java_class2);
-    return c1->IsAssignableFrom(c2) ? JNI_TRUE : JNI_FALSE;
+    return c2->IsAssignableFrom(c1) ? JNI_TRUE : JNI_FALSE;
   }
 
   static jboolean IsInstanceOf(JNIEnv* env, jobject jobj, jclass java_class) {
@@ -767,6 +771,11 @@ class JNI {
 
   static void ExceptionDescribe(JNIEnv* env) {
     ScopedObjectAccess soa(env);
+
+    // If we have no exception to describe, pass through.
+    if (!soa.Self()->GetException(nullptr)) {
+      return;
+    }
 
     SirtRef<Object> old_throw_this_object(soa.Self(), NULL);
     SirtRef<ArtMethod> old_throw_method(soa.Self(), NULL);

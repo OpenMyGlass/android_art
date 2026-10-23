@@ -29,14 +29,15 @@ namespace accounting {
 
 static inline bool byte_cas(byte old_value, byte new_value, byte* address) {
   // Little endian means most significant byte is on the left.
-  const size_t shift = reinterpret_cast<uintptr_t>(address) % sizeof(uintptr_t);
+  const size_t shift_in_bytes = reinterpret_cast<uintptr_t>(address) % sizeof(uintptr_t);
   // Align the address down.
-  address -= shift;
+  address -= shift_in_bytes;
+  const size_t shift_in_bits = shift_in_bytes * kBitsPerByte;
   int32_t* word_address = reinterpret_cast<int32_t*>(address);
   // Word with the byte we are trying to cas cleared.
-  const int32_t cur_word = *word_address & ~(0xFF << shift);
-  const int32_t old_word = cur_word | (static_cast<int32_t>(old_value) << shift);
-  const int32_t new_word = cur_word | (static_cast<int32_t>(new_value) << shift);
+  const int32_t cur_word = *word_address & ~(0xFF << shift_in_bits);
+  const int32_t old_word = cur_word | (static_cast<int32_t>(old_value) << shift_in_bits);
+  const int32_t new_word = cur_word | (static_cast<int32_t>(new_value) << shift_in_bits);
   bool success = android_atomic_cas(old_word, new_word, word_address) == 0;
   return success;
 }
@@ -120,7 +121,8 @@ template <typename Visitor, typename ModifiedVisitor>
 inline void CardTable::ModifyCardsAtomic(byte* scan_begin, byte* scan_end, const Visitor& visitor,
                                          const ModifiedVisitor& modified) {
   byte* card_cur = CardFromAddr(scan_begin);
-  byte* card_end = CardFromAddr(scan_end);
+  byte* card_end = CardFromAddr(reinterpret_cast<byte*>(
+      RoundUp(reinterpret_cast<uintptr_t>(scan_end), kCardSize)));
   CheckCardValid(card_cur);
   CheckCardValid(card_end);
 
@@ -146,7 +148,7 @@ inline void CardTable::ModifyCardsAtomic(byte* scan_begin, byte* scan_end, const
       new_value = visitor(expected);
     } while (expected != new_value && UNLIKELY(!byte_cas(expected, new_value, card_end)));
     if (expected != new_value) {
-      modified(card_cur, expected, new_value);
+      modified(card_end, expected, new_value);
     }
   }
 
